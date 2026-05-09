@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -21,10 +23,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// ================= 屏幕 1：主页 =================
+// ================= 屏幕 1：主页 (完美保留) =================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EcoSwapMainScreen(onNavigateToAdd: () -> Unit) {
+fun EcoSwapMainScreen(
+    onNavigateToAdd: () -> Unit,
+    onNavigateToSummary: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
     var inputText by remember { mutableStateOf("") }
     var displayMessage by remember { mutableStateOf("") }
 
@@ -38,7 +44,15 @@ fun EcoSwapMainScreen(onNavigateToAdd: () -> Unit) {
                 }
             )
         },
-        bottomBar = { MyBottomBar(onSellClick = onNavigateToAdd) },
+        bottomBar = {
+            // 激活底部导航栏的点击事件
+            MyBottomBar(
+                onExploreClick = { /* 当前已经在主页，无操作 */ },
+                onForYouClick = onNavigateToSummary,
+                onSellClick = onNavigateToAdd,
+                onMeClick = onNavigateToProfile
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
@@ -71,7 +85,7 @@ fun EcoSwapMainScreen(onNavigateToAdd: () -> Unit) {
     }
 }
 
-// ================= 屏幕 2：填写表单页面 =================
+// ================= 屏幕 2：填写表单页面 (完美保留) =================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSwapScreen (viewModel: EcoSwapViewModel, onNavigateToConfirm: () -> Unit, onNavigateBack: () -> Unit) {
@@ -109,7 +123,7 @@ fun AddSwapScreen (viewModel: EcoSwapViewModel, onNavigateToConfirm: () -> Unit,
     }
 }
 
-// ================= 屏幕 3：确认页面 =================
+// ================= 屏幕 3：确认页面 (增加发布逻辑) =================
 @Composable
 fun ConfirmationScreen(viewModel: EcoSwapViewModel, onNavigateHome: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
@@ -128,13 +142,80 @@ fun ConfirmationScreen(viewModel: EcoSwapViewModel, onNavigateHome: () -> Unit) 
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = onNavigateHome, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = {
+                viewModel.submitCurrentItem() // 核心：正式加入列表
+                onNavigateHome()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Publish & Return Home")
         }
     }
 }
 
-// ================= 可复用小组件 =================
+// ================= 屏幕 4：ViewModel 汇总列表页 (新增) =================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SummaryListScreen(viewModel: EcoSwapViewModel, onNavigateBack: () -> Unit) {
+    val itemList by viewModel.itemList.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Global Inventory") },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, "Back") } }
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
+            Text("Community Items (SDG 12)", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (itemList.isEmpty()) {
+                Text("No items published yet. Go to 'Sell' to add one!", color = MaterialTheme.colorScheme.outline)
+            } else {
+                LazyColumn {
+                    items(itemList) { item ->
+                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(item.itemName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                                Text("Condition: ${item.itemCondition}", color = MaterialTheme.colorScheme.outline, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ================= 屏幕 5：个人主页 (新增) =================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileScreen(onNavigateBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("My Profile") },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, "Back") } }
+            )
+        }
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(100.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("CAI ZHENGXIANG", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text("Matric No: A207380", color = MaterialTheme.colorScheme.outline)
+            Spacer(modifier = Modifier.height(24.dp))
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                Text("EcoSwap Points Earned: 150 🌱", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+// ================= 可复用小组件 (完美保留) =================
 @Composable
 fun ProductItem(title: String, condition: String, imageId: Int, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
@@ -180,29 +261,34 @@ fun MyTopBar(currentText: String, onTextChange: (String) -> Unit, onSearchClick:
     }
 }
 
+// 核心修改：让底部导航的图标变成可点击的跳转入口
 @Composable
-fun MyBottomBar(onSellClick: () -> Unit) {
+fun MyBottomBar(onExploreClick: () -> Unit, onForYouClick: () -> Unit, onSellClick: () -> Unit, onMeClick: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-            BottomIcon(Icons.Default.Search, "Explore", MaterialTheme.colorScheme.primary)
-            BottomIcon(Icons.Default.FavoriteBorder, "For You", MaterialTheme.colorScheme.outline)
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onExploreClick() }) {
+                Icon(Icons.Default.Search, contentDescription = "Explore", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                Text("Explore", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onForYouClick() }) {
+                Icon(Icons.Default.FavoriteBorder, contentDescription = "For You", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(26.dp))
+                Text("For You", fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+            }
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onSellClick() }) {
                 Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.error, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                     Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.onError)
                 }
                 Text("Sell", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
             }
-            BottomIcon(Icons.Default.Notifications, "Updates", MaterialTheme.colorScheme.outline)
-            BottomIcon(Icons.Default.Person, "Me", MaterialTheme.colorScheme.outline)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Notifications, contentDescription = "Updates", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(26.dp))
+                Text("Updates", fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onMeClick() }) {
+                Icon(Icons.Default.Person, contentDescription = "Me", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(26.dp))
+                Text("Me", fontSize = 10.sp, color = MaterialTheme.colorScheme.outline)
+            }
         }
-    }
-}
-
-@Composable
-fun BottomIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(26.dp))
-        Text(label, fontSize = 10.sp, color = color)
     }
 }
 

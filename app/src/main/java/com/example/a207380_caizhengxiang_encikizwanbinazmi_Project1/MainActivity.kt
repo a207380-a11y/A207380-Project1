@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+// 注意：如果你本地有自定义主题，请确保 import 你的主题包，如果没有可以直接删掉 AppTheme 这一层
 import com.example.a207380_caizhengxiang_encikizwanbinazmi_Project1.ui.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,13 +26,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EcoSwapApp() {
     val navController = rememberNavController()
-    // 这里的 viewModel() 现在会变成正常的颜色
     val viewModel: EcoSwapViewModel = viewModel()
 
     NavHost(navController = navController, startDestination = "home") {
+
         composable("home") {
-            EcoSwapMainScreen(onNavigateToAdd = { navController.navigate("add_item") })
+            EcoSwapMainScreen(
+                onNavigateToAdd = { navController.navigate("add_item") },
+                onNavigateToSummary = { navController.navigate("summary") },
+                onNavigateToProfile = { navController.navigate("profile") }
+            )
         }
+
         composable("add_item") {
             AddSwapScreen(
                 viewModel = viewModel,
@@ -39,6 +45,7 @@ fun EcoSwapApp() {
                 onNavigateBack = { navController.popBackStack() }
             )
         }
+
         composable("confirmation") {
             ConfirmationScreen(
                 viewModel = viewModel,
@@ -47,6 +54,19 @@ fun EcoSwapApp() {
                         popUpTo("home") { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable("summary") {
+            SummaryListScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("profile") {
+            ProfileScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

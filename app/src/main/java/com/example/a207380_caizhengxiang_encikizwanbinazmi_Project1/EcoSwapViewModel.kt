@@ -5,18 +5,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-// ================= 数据类 =================
+
 data class SwapItemState(
     val itemName: String = "",
     val itemCondition: String = ""
 )
 
-// ================= ViewModel =================
 class EcoSwapViewModel : ViewModel() {
+
     private val _uiState = MutableStateFlow(SwapItemState())
     val uiState: StateFlow<SwapItemState> = _uiState.asStateFlow()
 
+
+    private val _itemList = MutableStateFlow<List<SwapItemState>>(emptyList())
+    val itemList: StateFlow<List<SwapItemState>> = _itemList.asStateFlow()
+
+
     fun updateItemDetails(name: String, condition: String) {
-        _uiState.value = SwapItemState(itemName = name, itemCondition = condition)
-    }//更新商品详情数据
+        _uiState.value = SwapItemState(name, condition)
+    }
+
+
+    fun submitCurrentItem() {
+        if (_uiState.value.itemName.isNotBlank()) {
+            _itemList.value = _itemList.value + _uiState.value
+            _uiState.value = SwapItemState() // 清空，方便下次添加
+        }
+    }
 }
